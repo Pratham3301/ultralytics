@@ -202,7 +202,16 @@ class DataExportMixin:
 
         df = self.to_df(normalize=normalize, decimals=decimals)
         if df is None:
-            return str(self.summary(normalize=normalize, decimals=decimals))
+            import csv
+            import io
+            summary = self.summary(normalize=normalize, decimals=decimals)
+            if not summary:
+                return ""
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=summary[0].keys())
+            writer.writeheader()
+            writer.writerows(summary)
+            return output.getvalue()
 
         try:
             return df.write_csv()

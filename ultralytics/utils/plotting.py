@@ -582,7 +582,7 @@ def plot_labels(boxes, cls, names=(), save_dir=Path(""), on_plot=None):
         import polars as pl
         x = pl.DataFrame(boxes, schema=["x", "y", "width", "height"])
     except (ImportError, Exception):
-        x = boxes  # fallback or handle differently if needed
+        x = {"x": boxes[:, 0], "y": boxes[:, 1], "width": boxes[:, 2], "height": boxes[:, 3]}
 
     # Matplotlib labels
     subplot_3_4_color = LinearSegmentedColormap.from_list("white_blue", ["white", "blue"])

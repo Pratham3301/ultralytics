@@ -751,7 +751,10 @@ class BaseTrainer:
             return None, None
         fitness = metrics.pop("fitness", -self.loss.detach().cpu().numpy())  # use loss as fitness measure if not found
         if self.args.fitness_func:
-            fitness = self.args.fitness_func(metrics) if callable(self.args.fitness_func) else fitness
+            if callable(self.args.fitness_func):
+                fitness = self.args.fitness_func(metrics)
+            elif isinstance(self.args.fitness_func, str) and self.args.fitness_func in metrics:
+                fitness = metrics[self.args.fitness_func]
         if not self.best_fitness or self.best_fitness < fitness:
             self.best_fitness = fitness
         return metrics, fitness
