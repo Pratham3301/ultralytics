@@ -573,14 +573,16 @@ def plot_labels(boxes, cls, names=(), save_dir=Path(""), on_plot=None):
         on_plot (Callable, optional): Function to call after plot is saved.
     """
     import matplotlib.pyplot as plt  # scope for faster 'import ultralytics'
-    import polars
-    from matplotlib.colors import LinearSegmentedColormap
-
     # Plot dataset labels
     LOGGER.info(f"Plotting labels to {save_dir / 'labels.jpg'}... ")
     nc = int(cls.max() + 1)  # number of classes
     boxes = boxes[:1000000]  # limit to 1M boxes
-    x = polars.DataFrame(boxes, schema=["x", "y", "width", "height"])
+    from matplotlib.colors import LinearSegmentedColormap
+    try:
+        import polars as pl
+        x = pl.DataFrame(boxes, schema=["x", "y", "width", "height"])
+    except (ImportError, Exception):
+        x = boxes  # fallback or handle differently if needed
 
     # Matplotlib labels
     subplot_3_4_color = LinearSegmentedColormap.from_list("white_blue", ["white", "blue"])
@@ -868,7 +870,10 @@ def plot_results(file: str = "path/to/results.csv", dir: str = "", on_plot: Call
         >>> plot_results("path/to/results.csv")
     """
     import matplotlib.pyplot as plt  # scope for faster 'import ultralytics'
-    import polars as pl
+    try:
+        import polars as pl
+    except ImportError:
+        pl = None
     from scipy.ndimage import gaussian_filter1d
 
     save_dir = Path(file).parent if file else Path(dir)
@@ -899,12 +904,13 @@ def plot_results(file: str = "path/to/results.csv", dir: str = "", on_plot: Call
                 ax[i].set_title(j, fontsize=12)
         except Exception as e:
             LOGGER.error(f"Plotting error for {f}: {e}")
-    ax[1].legend()
-    fname = save_dir / "results.png"
-    fig.savefig(fname, dpi=200)
-    plt.close()
-    if on_plot:
-        on_plot(fname)
+    if "fig" in locals():
+        ax[1].legend()
+        fname = save_dir / "results.png"
+        fig.savefig(fname, dpi=200)
+        plt.close()
+        if on_plot:
+            on_plot(fname)
 
 
 def plt_color_scatter(v, f, bins: int = 20, cmap: str = "viridis", alpha: float = 0.8, edgecolors: str = "none"):
@@ -953,7 +959,10 @@ def plot_tune_results(csv_file: str = "tune_results.csv", exclude_zero_fitness_p
         >>> plot_tune_results("path/to/tune_results.csv")
     """
     import matplotlib.pyplot as plt  # scope for faster 'import ultralytics'
-    import polars as pl
+    try:
+        import polars as pl
+    except ImportError:
+        pl = None
     from scipy.ndimage import gaussian_filter1d
 
     def _save_one_file(file):
@@ -964,6 +973,9 @@ def plot_tune_results(csv_file: str = "tune_results.csv", exclude_zero_fitness_p
 
     # Scatter plots for each hyperparameter
     csv_file = Path(csv_file)
+    if pl is None:
+        LOGGER.warning(f"WARNING ⚠️ polars not found, unable to plot {csv_file}")
+        return
     data = pl.read_csv(csv_file, infer_schema_length=None)
     num_metrics_columns = 1
     keys = [x.strip() for x in data.columns][num_metrics_columns:]

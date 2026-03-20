@@ -72,7 +72,8 @@ class BaseTrainer:
 
     Attributes:
         args (SimpleNamespace): Configuration for the trainer.
-        validator (BaseValidator): Validator instance.
+        validator (BaseValidator): The validator to use for validation.
+        fitness_func (Callable, optional): Custom fitness function to calculate fitness from metrics.
         model (nn.Module): Model instance.
         callbacks (defaultdict): Dictionary of callbacks.
         save_dir (Path): Directory to save results.
@@ -119,7 +120,8 @@ class BaseTrainer:
 
         Args:
             cfg (str | dict | SimpleNamespace, optional): Path to a configuration file or configuration object.
-            overrides (dict, optional): Configuration overrides.
+            fitness_func (str | Callable, optional): Custom fitness function or metric name. 
+            If a callable is provided, it should take a metrics dictionary and return a single float.
             _callbacks (dict, optional): Dictionary of callback functions.
         """
         self.hub_session = overrides.pop("session", None)  # HUB
@@ -606,9 +608,8 @@ class BaseTrainer:
 
     def read_results_csv(self):
         """Read results.csv into a dictionary using polars."""
-        import polars as pl  # scope for faster 'import ultralytics'
-
         try:
+            import polars as pl  # scope for faster 'import ultralytics'
             return pl.read_csv(self.csv, infer_schema_length=None).to_dict(as_series=False)
         except Exception:
             return {}
@@ -636,7 +637,7 @@ class BaseTrainer:
                 "updates": self.ema.updates,
                 "optimizer": convert_optimizer_state_dict_to_fp16(deepcopy(self.optimizer.state_dict())),
                 "scaler": self.scaler.state_dict(),
-                "train_args": vars(self.args),  # save as dict
+                "train_args": {k: v for k, v in vars(self.args).items() if k != "fitness_func"},  # save as dict
                 "train_metrics": {**self.metrics, **{"fitness": self.fitness}},
                 "train_results": self.read_results_csv(),
                 "date": datetime.now().isoformat(),
@@ -748,6 +749,8 @@ class BaseTrainer:
         if metrics is None:
             return None, None
         fitness = metrics.pop("fitness", -self.loss.detach().cpu().numpy())  # use loss as fitness measure if not found
+        if self.args.fitness_func:
+            fitness = self.args.fitness_func(metrics) if callable(self.args.fitness_func) else fitness
         if not self.best_fitness or self.best_fitness < fitness:
             self.best_fitness = fitness
         return metrics, fitness

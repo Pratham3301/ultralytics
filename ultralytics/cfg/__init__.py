@@ -472,6 +472,7 @@ def check_dict_alignment(
         custom (dict): The custom configuration dictionary to be checked for alignment.
         e (Exception | None): Optional error instance passed by the calling function.
         allowed_custom_keys (set | None): Optional set of additional keys that are allowed in the custom dictionary.
+        fitness_func (str | Callable, optional): Custom fitness function or metric name.
 
     Raises:
         SystemExit: If mismatched keys are found between the custom and base dictionaries.

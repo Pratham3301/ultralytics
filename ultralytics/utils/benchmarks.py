@@ -90,14 +90,17 @@ def benchmark(
     imgsz = check_imgsz(imgsz)
     assert imgsz[0] == imgsz[1] if isinstance(imgsz, list) else True, "benchmark() only supports square imgsz."
 
-    import polars as pl  # scope for faster 'import ultralytics'
+    try:
+        import polars as pl  # scope for faster 'import ultralytics'
 
-    pl.Config.set_tbl_cols(-1)  # Show all columns
-    pl.Config.set_tbl_rows(-1)  # Show all rows
-    pl.Config.set_tbl_width_chars(-1)  # No width limit
-    pl.Config.set_tbl_hide_column_data_types(True)  # Hide data types
-    pl.Config.set_tbl_hide_dataframe_shape(True)  # Hide shape info
-    pl.Config.set_tbl_formatting("ASCII_BORDERS_ONLY_CONDENSED")
+        pl.Config.set_tbl_cols(-1)  # Show all columns
+        pl.Config.set_tbl_rows(-1)  # Show all rows
+        pl.Config.set_tbl_width_chars(-1)  # No width limit
+        pl.Config.set_tbl_hide_column_data_types(True)  # Hide data types
+        pl.Config.set_tbl_hide_dataframe_shape(True)  # Hide shape info
+        pl.Config.set_tbl_formatting("ASCII_BORDERS_ONLY_CONDENSED")
+    except ImportError:
+        pl = None
 
     device = select_device(device, verbose=False)
     if isinstance(model, (str, Path)):
@@ -202,6 +205,9 @@ def benchmark(
 
     # Print results
     check_yolo(device=device)  # print system info
+    if pl is None:
+        LOGGER.warning("WARNING ⚠️ polars not found, unable to format benchmark results as DataFrame.")
+        return y
     df = pl.DataFrame(y, schema=["Format", "Status❔", "Size (MB)", key, "Inference time (ms/im)", "FPS"], orient="row")
     df = df.with_row_index(" ", offset=1)  # add index info
     df_display = df.with_columns(pl.all().cast(pl.String).fill_null("-"))

@@ -177,11 +177,13 @@ class DataExportMixin:
             decimals (int, optional): Decimal places to round floats.
 
         Returns:
-            (polars.DataFrame): Polars DataFrame containing the summary data.
+            (polars.DataFrame | None): Polars DataFrame containing the summary data, or None if polars not installed.
         """
-        import polars as pl  # scope for faster 'import ultralytics'
-
-        return pl.DataFrame(self.summary(normalize=normalize, decimals=decimals))
+        try:
+            import polars as pl  # scope for faster 'import ultralytics'
+            return pl.DataFrame(self.summary(normalize=normalize, decimals=decimals))
+        except ImportError:
+            return None
 
     def to_csv(self, normalize=False, decimals=5):
         """Export results or metrics to CSV string format.
@@ -193,9 +195,14 @@ class DataExportMixin:
         Returns:
             (str): CSV content as string.
         """
-        import polars as pl
+        try:
+            import polars as pl
+        except ImportError:
+            return str(self.summary(normalize=normalize, decimals=decimals))
 
         df = self.to_df(normalize=normalize, decimals=decimals)
+        if df is None:
+            return str(self.summary(normalize=normalize, decimals=decimals))
 
         try:
             return df.write_csv()
