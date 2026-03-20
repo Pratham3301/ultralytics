@@ -1,19 +1,18 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-import sys
 import os
-import torch
+import sys
 from pathlib import Path
+
+import torch
 
 # Add local ultralytics to sys.path
 # This ensures we test the local changes, not the installed package
 local_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, local_path)
 
-import ultralytics
-print(f"Using ultralytics from: {ultralytics.__file__}")
-
-from ultralytics import YOLO
+import ultralytics  # noqa: E402
+from ultralytics import YOLO  # noqa: E402
 
 def custom_fitness(metrics):
     """Custom fitness returns only mAP50."""

@@ -120,8 +120,9 @@ class BaseTrainer:
 
         Args:
             cfg (str | dict | SimpleNamespace, optional): Path to a configuration file or configuration object.
+            overrides (dict, optional): Configuration overrides.
             fitness_func (str | Callable, optional): Custom fitness function or metric name. 
-            If a callable is provided, it should take a metrics dictionary and return a single float.
+                If a callable is provided, it should take a metrics dictionary and return a single float.
             _callbacks (dict, optional): Dictionary of callback functions.
         """
         self.hub_session = overrides.pop("session", None)  # HUB
